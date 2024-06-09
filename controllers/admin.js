@@ -5,7 +5,7 @@ const getAddProduct = (req, res, next) => {
   res.render("admin/edit-product", {
     pageTitle: "Add Product",
     path: "/admin/add-product",
-    editting: false,
+    editing: false
   });
 };
 
@@ -14,24 +14,25 @@ const postAddProduct = (req, res, next) => {
   const price = req.body.price;
   const description = req.body.description;
   const imageUrl = req.body.imageUrl;
-  const product = new Product(title, price, description, imageUrl);
+  const product = new Product(title, price, description, imageUrl, null, req.user._id);
 
   product
     .save()
     .then((result) => {
-      console.log(result);
+      //console.log(result);
+      console.log('Created Product')
       res.redirect("/admin/products");
     })
     .catch((err) => console.log(err));
 };
 
 const getEditProduct = (req, res, next) => {
-  const editMode = req.quire.edit;
+  const editMode = true;
   if (!editMode) {
     return res.redirect("/");
   }
-  const id = req.params.productId;
-  Product.findById(id)
+  const prodId = req.params.productId;
+  Product.findById(prodId)
     .then((product) => {
       if (!product) {
         return res.redirect("/");
@@ -40,14 +41,14 @@ const getEditProduct = (req, res, next) => {
         pageTitle: "Edit Product",
         path: "/admin/edit-product",
         editing: editMode,
-        product: product,
+        product: product
       });
     })
     .catch((err) => console.log(err));
 };
 
 const postEditProduct = (req, res, next) => {
-  const prId = req.body.productId;
+  const prodId = req.body.productId;
   const updatedTitle = req.body.title;
   const updatedPrice = req.body.price;
   const updatedDesc = req.body.description;
@@ -58,14 +59,13 @@ const postEditProduct = (req, res, next) => {
     updatedPrice,
     updatedDesc,
     updatedImageUrl,
-    prId
+    prodId
   );
 
   product
     .save()
     .then((result) => {
-      console.log(prodId);
-      console.log(req.user._id);
+      // console.log(prodId);
       console.log("Updated");
       res.redirect("/admin/products");
     })
@@ -75,7 +75,7 @@ const postEditProduct = (req, res, next) => {
 const getProducts = (req, res, next)=>{
     Product.fetchAll()
     .then(products=>{
-        res.render('/admin/products',{
+        res.render('admin/products',{
             prods: products,
            pageTitle: 'Admin Products',
            path: '/admin/products'
