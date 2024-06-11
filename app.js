@@ -33,7 +33,7 @@ app.use((req, res, next) => {
 });
 
 app.use("/admin", adminRoutes);
-app.use('shop', shopRoutes);
+app.use(shopRoutes);
 app.use(errorControllers.get404);
 
 mongoConnect(() => {
