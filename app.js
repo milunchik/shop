@@ -1,7 +1,7 @@
 const express = require("express");
 const path = require("path");
 const bodyParser = require("body-parser");
-const mongoConnect = require("./util/database").mongoConnect;
+const mongoose = require("mongoose");
 
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
@@ -17,16 +17,16 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use((req, res, next) => {
-  User.findById('66608acd7db4ae0bc46258a7')
-    .then(user => {
+  User.findById("6668e1744695794034c1dfe8")
+    .then((user) => {
       if (user) {
-        req.user = new User(user.name, user.email, user.cart, user._id);
+        req.user = user;
       } else {
         req.user = null;
       }
       next();
     })
-    .catch(err => {
+    .catch((err) => {
       console.log(err);
       next(err);
     });
@@ -36,7 +36,27 @@ app.use("/admin", adminRoutes);
 app.use(shopRoutes);
 app.use(errorControllers.get404);
 
-mongoConnect(() => {
-  app.listen(3000)
-  console.log("http://localhost:3000")
-});
+mongoose
+  .connect(
+    "mongodb+srv://milunchik:newpassword1234@firstcluster.lu1iyrt.mongodb.net/shop?retryWrites=true&w=majority&appName=FirstCluster"
+  )
+  .then((result) => {
+    User.findOne().then(user=>{
+      if(!user){
+        const user = new User({
+      name: 'Emily',
+      email: 'emily@test.com',
+      cart:{
+        items: []
+      }
+    })
+    user.save();
+      }
+    })
+    
+    app.listen(3000);
+    console.log("http://localhost:3000");
+  })
+  .catch((err) => {
+    console.log(err);
+  });

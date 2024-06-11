@@ -7,21 +7,16 @@ router.get('/', controllers.getIndex)
 
 router.get('/products', controllers.getProducts)
 
-router.get('/products/:productsId', controllers.getProduct)
+router.get('/products/:productId', controllers.getProduct)
 
-router.get('/cart', controllers.getCart)
+// router.get('/cart', controllers.getCart)
 
-router.post('/cart', controllers.postCart)
+// router.post('/cart', controllers.postCart)
 
-router.post('/cart-delete-item', controllers.postCartDeleteProduct)
+// router.post('/cart-delete-item', controllers.postCartDeleteProduct)
 
-router.post('/create-order', controllers.postOrder)
+// router.post('/create-order', controllers.postOrder)
 
-router.get('/orders', controllers.getOrders)
+// router.get('/orders', controllers.getOrders)
 
 module.exports = router;
-
-
-
-
-
