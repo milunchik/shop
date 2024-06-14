@@ -234,3 +234,15 @@ form {
     display: none;
   }
 }
+
+.user-error-message{
+  font-family: 'Open Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff0000;
+  padding: 10px;
+  margin: auto;
+  width: 90%;
+  text-align: center;
+}
