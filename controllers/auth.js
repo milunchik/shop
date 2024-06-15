@@ -1,17 +1,18 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/user");
+const emailjs = require("emailjs-com");
 
 const getLogin = (req, res, next) => {
-  let message = req.flash('error')
-  if(message.length>0){
-    message = message[0]
-  }else{
-    message =null;
+  let message = req.flash("error");
+  if (message.length > 0) {
+    message = message[0];
+  } else {
+    message = null;
   }
   res.render("auth/login", {
     path: "/login",
     pageTitle: "Login",
-    errorMessage: message
+    errorMessage: message,
   });
 };
 
@@ -21,7 +22,7 @@ const postLogin = (req, res, next) => {
   User.findOne({ email: email })
     .then((user) => {
       if (!user) {
-        req.flash('error', 'Invalid email or password')
+        req.flash("error", "Invalid email or password");
         return res.redirect("/login");
       }
       bcrypt
@@ -31,11 +32,11 @@ const postLogin = (req, res, next) => {
             req.session.isLoggedIn = true;
             req.session.user = user;
             return req.session.save((err) => {
-              console.log('Error: '+err);
+              console.log("Error: " + err);
               res.redirect("/");
             });
           }
-          req.flash('error', 'Invalid email or password')
+          req.flash("error", "Invalid email or password");
           res.redirect("/login");
         })
         .catch((err) => {
@@ -50,22 +51,22 @@ const postLogin = (req, res, next) => {
 
 const postLogout = (req, res, next) => {
   req.session.destroy((err) => {
-    console.log('Error: '+err);
+    console.log("Error: " + err);
     res.redirect("/");
   });
 };
 
 const getSignUp = (req, res, next) => {
-  let message = req.flash('error')
-  if(message.length>0){
-    message = message[0]
-  }else{
-    message =null;
+  let message = req.flash("error");
+  if (message.length > 0) {
+    message = message[0];
+  } else {
+    message = null;
   }
   res.render("auth/sign-up", {
     path: "/signup",
     pageTitle: "Sign Up",
-    errorMessage: message
+    errorMessage: message,
   });
 };
 
@@ -77,7 +78,7 @@ const postSignUp = (req, res, next) => {
   User.findOne({ email: email })
     .then((userDoc) => {
       if (userDoc) {
-        req.flash('error', 'Email exists already')
+        req.flash("error", "Email exists already");
         return res.redirect("/signup");
       }
       return bcrypt
@@ -92,10 +93,32 @@ const postSignUp = (req, res, next) => {
           return newUser.save();
         })
         .then((result) => {
+          sendEmail(email);
           res.redirect("/login");
-        });
+        })
+        .catch((err) => console.log(err));
     })
     .catch((err) => console.log(err));
+};
+
+const sendEmail = (email) => {
+  const data = {
+    service_id: "service_5o5rk1q",
+    template_id: "template_qm3gnfd",
+    user_id: "PvWkvXd0b0tAm-nWo",
+    template_params: {
+      username: email,
+    },
+  };
+
+  emailjs
+    .send(data.service_id, data.template_id, data.template_params, data.user_id)
+    .then((response) => {
+      console.log("Your mail is sent!", response.status, response.text);
+    })
+    .catch((error) => {
+      console.error(error);
+    });
 };
 
 module.exports = {
