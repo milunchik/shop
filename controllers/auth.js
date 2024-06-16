@@ -1,6 +1,9 @@
+const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const User = require("../models/user");
-const emailjs = require("emailjs-com");
+const axios = require("axios");
+const url = "https://sandbox.api.mailtrap.io/api/send/2960595";
+const token = "66cead96c03efe5609adf94245f50a98";
 
 const getLogin = (req, res, next) => {
   let message = req.flash("error");
@@ -81,45 +84,124 @@ const postSignUp = (req, res, next) => {
         req.flash("error", "Email exists already");
         return res.redirect("/signup");
       }
-      return bcrypt
-        .hash(password, 12)
-        .then((hashedPassword) => {
-          const newUser = new User({
-            email: email,
-            password: hashedPassword,
-            cart: { items: [] },
-          });
+      if (password === confirmPassword) {
+        return bcrypt
+          .hash(password, 12)
+          .then((hashedPassword) => {
+            const newUser = new User({
+              email: email,
+              password: hashedPassword,
+              cart: { items: [] },
+            });
 
-          return newUser.save();
-        })
-        .then((result) => {
-          sendEmail(email);
-          res.redirect("/login");
-        })
-        .catch((err) => console.log(err));
+            return newUser.save();
+          })
+          .then((result) => {
+            sendEmail(email);
+            res.redirect("/login");
+          })
+          .catch((err) => console.log(err));
+      } else {
+        req.flash("error", "Passwords do not match");
+        return res.redirect("/signup");
+      }
     })
     .catch((err) => console.log(err));
 };
 
-const sendEmail = (email) => {
-  const data = {
-    service_id: "service_5o5rk1q",
-    template_id: "template_qm3gnfd",
-    user_id: "PvWkvXd0b0tAm-nWo",
-    template_params: {
-      username: email,
-    },
-  };
+const getReset = (req, res, next) => {
+  let message = req.flash("error");
+  if (message.length > 0) {
+    message = message[0];
+  } else {
+    message = null;
+  }
+  res.render("auth/reset", {
+    path: "/reset",
+    pageTitle: "Reset Password",
+    errorMessage: message,
+  });
+};
 
-  emailjs
-    .send(data.service_id, data.template_id, data.template_params, data.user_id)
+const postReset = (req, res, next) => {
+  crypto.randomBytes(32, (err, buffer) => {
+    if (err) {
+      console.log(err);
+      return req.redirect("/reset");
+    }
+    const token = buffer.toString("hex");
+    User.findOne({ email: req.body.email })
+      .then((user) => {
+        if (!user) {
+          req.flash("error", "No user was found");
+          return res.redirect("/reset");
+        }
+        user.resetToken = token;
+        user.resetTokenExpiration = Date.now() + 3600000;
+        user.save();
+      })
+      .then((result) => {
+        //підвтердження зміни пароля
+      })
+      .catch((err) => console.log(err));
+  });
+  const currEmail = req.body.currentEmail;
+  const upEmail = req.body.email;
+  const upPassword = req.body.password;
+  const upConfirmPassword = req.body.confirmPassword;
+  if (upPassword === upConfirmPassword) {
+    User.findOne({ email: currEmail });
+    return bcrypt
+      .hash(upPassword, 12)
+      .then((hashedPassword) => {
+        const newUser = new User({
+          email: upEmail,
+          password: hashedPassword,
+          cart: { items: [] },
+        });
+
+        return newUser.save();
+      })
+      .then((result) => {
+        //sendEmail(email);
+        res.redirect("/login");
+      })
+      .catch((err) => console.log(err));
+  } else {
+    req.flash("error", "Passwords do not match");
+    return res.redirect("/");
+  }
+};
+
+function sendEmail(email) {
+  const data = {
+    from: {
+      email: "mailtrap@example.com",
+      name: "Mailtrap Test",
+    },
+    to: [
+      {
+        email: email,
+      },
+    ],
+    subject: "You are awesome!",
+    text: "You successfully made your action",
+    category: "Integration Test",
+  };
+  axios
+    .post(url, data, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    })
     .then((response) => {
-      console.log("Your mail is sent!", response.status, response.text);
+      console.log(response.data);
     })
     .catch((error) => {
-      console.error(error);
+      console.error("Error sending email:", error);
     });
-};
+}
 
 module.exports = {
   getLogin,
@@ -127,4 +209,6 @@ module.exports = {
   postLogout,
   postSignUp,
   getSignUp,
+  getReset,
+  postReset,
 };
