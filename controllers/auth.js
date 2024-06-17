@@ -97,7 +97,7 @@ const postSignUp = (req, res, next) => {
             return newUser.save();
           })
           .then((result) => {
-            sendEmail(email);
+            sendEmail(email, "You are registered successfully");
             res.redirect("/login");
           })
           .catch((err) => console.log(err));
@@ -124,56 +124,80 @@ const getReset = (req, res, next) => {
 };
 
 const postReset = (req, res, next) => {
+  const email = req.body.email;
   crypto.randomBytes(32, (err, buffer) => {
     if (err) {
       console.log(err);
       return req.redirect("/reset");
     }
-    const token = buffer.toString("hex");
-    User.findOne({ email: req.body.email })
+    const resetToken = buffer.toString("hex");
+    User.findOne({ email: email })
       .then((user) => {
         if (!user) {
           req.flash("error", "No user was found");
           return res.redirect("/reset");
         }
-        user.resetToken = token;
+        user.resetToken = resetToken;
         user.resetTokenExpiration = Date.now() + 3600000;
-        user.save();
-      })
-      .then((result) => {
-        //підвтердження зміни пароля
+        sendEmail(
+          email,
+          `Click a link 'http://localhost:3000/reset/${resetToken}' to set a new password`
+        );
+        req.flash("error", "Go to your email to reset the password");
+        return user.save();
       })
       .catch((err) => console.log(err));
   });
-  const currEmail = req.body.currentEmail;
-  const upEmail = req.body.email;
-  const upPassword = req.body.password;
-  const upConfirmPassword = req.body.confirmPassword;
-  if (upPassword === upConfirmPassword) {
-    User.findOne({ email: currEmail });
-    return bcrypt
-      .hash(upPassword, 12)
-      .then((hashedPassword) => {
-        const newUser = new User({
-          email: upEmail,
-          password: hashedPassword,
-          cart: { items: [] },
-        });
-
-        return newUser.save();
-      })
-      .then((result) => {
-        //sendEmail(email);
-        res.redirect("/login");
-      })
-      .catch((err) => console.log(err));
-  } else {
-    req.flash("error", "Passwords do not match");
-    return res.redirect("/");
-  }
 };
 
-function sendEmail(email) {
+const getNewPassword = (req, res, next) => {
+  const token = req.params.token;
+  User.findOne({ resetToken: token, resetTokenExpiration: { $gt: Date.now() } })
+    .then((user) => {
+      let message = req.flash("error");
+      if (message.length > 0) {
+        message = message[0];
+      } else {
+        message = null;
+      }
+      res.render("auth/new-password", {
+        path: "/new-password",
+        pageTitle: "Reset Password",
+        errorMessage: message,
+        userId: user._id.toString(),
+        passwordToken: token,
+      });
+    })
+    .catch((err) => console.log(err));
+};
+
+const postNewPassword = (req, res, next) => {
+  const newPassword = req.body.password;
+  const userId = req.body.userId;
+  const passwordToken = req.body.passwordToken;
+  let resetUser;
+  User.findOne({
+    resetToken: passwordToken,
+    resetTokenExpiration: { $gt: Date.now() },
+    _id: userId,
+  })
+    .then((user) => {
+      resetUser = user;
+      return bcrypt.hash(newPassword, 12);
+    })
+    .then((hashedPassword) => {
+      resetUser.password = hashedPassword;
+      resetUser.resetToken = undefined;
+      resetUser.resetTokenExpiration = undefined;
+      return resetUser.save();
+    })
+    .then((result) => {
+      res.redirect("/login");
+    })
+    .catch((err) => console.log(err));
+};
+
+function sendEmail(email, text) {
   const data = {
     from: {
       email: "mailtrap@example.com",
@@ -184,8 +208,8 @@ function sendEmail(email) {
         email: email,
       },
     ],
-    subject: "You are awesome!",
-    text: "You successfully made your action",
+    subject: "New action in your account",
+    text: text,
     category: "Integration Test",
   };
   axios
@@ -211,4 +235,6 @@ module.exports = {
   getSignUp,
   getReset,
   postReset,
+  getNewPassword,
+  postNewPassword,
 };

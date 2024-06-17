@@ -5,12 +5,14 @@ const UserSchema = new Schema({
   email: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   password: {
     type: String,
-    required: true
+    required: true,
   },
+  resetToken: String,
+  resetTokenExpiration: Date,
   cart: {
     items: [
       {
@@ -50,18 +52,18 @@ UserSchema.methods.addToCart = function (product) {
   return this.save();
 };
 
-UserSchema.methods.removeFromCart = function(productId){
-  const updateCartItems = this.cart.items.filter(item=>{
+UserSchema.methods.removeFromCart = function (productId) {
+  const updateCartItems = this.cart.items.filter((item) => {
     return item.productId.toString() !== productId.toString();
-  })
-    console.log('Deleted')
-    this.cart.items = updateCartItems;
-    return this.save();
-}
-
-UserSchema.methods.clearCart = function(){
-  this.cart = {items: []};
+  });
+  console.log("Deleted");
+  this.cart.items = updateCartItems;
   return this.save();
-}
+};
+
+UserSchema.methods.clearCart = function () {
+  this.cart = { items: [] };
+  return this.save();
+};
 
 module.exports = mongoose.model("Users", UserSchema);

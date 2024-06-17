@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css?family=Open+Sans:400,700');
+@import url("https://fonts.googleapis.com/css?family=Open+Sans:400,700");
 
 * {
   box-sizing: border-box;
@@ -7,7 +7,7 @@
 body {
   padding: 0;
   margin: 0;
-  font-family: 'Open Sans', sans-serif;
+  font-family: "Open Sans", sans-serif;
 }
 
 main {
@@ -235,8 +235,8 @@ form {
   }
 }
 
-.user-error-message{
-  font-family: 'Open Sans', sans-serif;
+.user-error-message {
+  font-family: "Open Sans", sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -245,4 +245,17 @@ form {
   margin: auto;
   width: 90%;
   text-align: center;
+}
+
+.reset {
+  display: flex;
+  font-family: "Open Sans", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.reset a {
+  text-decoration: none;
+  color: #00695c;
 }
