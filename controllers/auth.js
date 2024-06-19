@@ -5,6 +5,7 @@ const axios = require("axios");
 const url = "https://sandbox.api.mailtrap.io/api/send/2960595";
 const token = "66cead96c03efe5609adf94245f50a98";
 const { query, validationResult } = require("express-validator");
+const newError = require("./error-handling");
 
 const getLogin = (req, res, next) => {
   let message = req.flash("error");
@@ -17,6 +18,11 @@ const getLogin = (req, res, next) => {
     path: "/login",
     pageTitle: "Login",
     errorMessage: message,
+    oldInput: {
+      email: "",
+      password: "",
+    },
+    validationErrors: [],
   });
 };
 
@@ -25,6 +31,19 @@ const postLogin = (req, res, next) => {
   const password = req.body.password;
   const errors = validationResult(req);
 
+  if (!errors.isEmpty()) {
+    return res.status(422).render("auth/login", {
+      path: "/login",
+      pageTitle: "Login",
+      errorMessage: errors.array()[0].msg,
+      oldInput: {
+        email: email,
+        password: password,
+      },
+      validationErrors: errors.array(),
+    });
+  }
+
   User.findOne({ email: email })
     .then((user) => {
       if (!errors.isEmpty()) {
@@ -32,6 +51,11 @@ const postLogin = (req, res, next) => {
           path: "/login",
           pageTitle: "Login",
           errorMessage: errors.array()[0].msg,
+          oldInput: {
+            email: email,
+            password: password,
+          },
+          validationErrors: [],
         });
       }
       bcrypt
@@ -45,6 +69,16 @@ const postLogin = (req, res, next) => {
               res.redirect("/");
             });
           }
+          return res.status(422).render("auth/login", {
+            path: "/login",
+            pageTitle: "Login",
+            errorMessage: "Invalid email or password.",
+            oldInput: {
+              email: email,
+              password: password,
+            },
+            validationErrors: [],
+          });
         })
         .catch((err) => {
           console.log(err);
@@ -52,7 +86,7 @@ const postLogin = (req, res, next) => {
         });
     })
     .catch((err) => {
-      console.log(err);
+      newError(err);
     });
 };
 
@@ -116,7 +150,7 @@ const postSignUp = (req, res, next) => {
       sendEmail(email, "You are registered successfully");
       res.redirect("/login");
     })
-    .catch((err) => console.log(err));
+    .catch((err) => newError(err));
 };
 
 const getReset = (req, res, next) => {
@@ -156,7 +190,7 @@ const postReset = (req, res, next) => {
         req.flash("error", "Go to your email to reset the password");
         return user.save();
       })
-      .catch((err) => console.log(err));
+      .catch((err) => newError(err));
   });
 };
 
@@ -178,7 +212,7 @@ const getNewPassword = (req, res, next) => {
         passwordToken: token,
       });
     })
-    .catch((err) => console.log(err));
+    .catch((err) => newError(err));
 };
 
 const postNewPassword = (req, res, next) => {
@@ -204,7 +238,7 @@ const postNewPassword = (req, res, next) => {
     .then((result) => {
       res.redirect("/login");
     })
-    .catch((err) => console.log(err));
+    .catch((err) => newError(err));
 };
 
 function sendEmail(email, text) {

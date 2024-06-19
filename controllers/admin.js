@@ -1,6 +1,8 @@
 const Product = require("../models/product");
 const { validationResult } = require("express-validator");
 
+const newError = require("./error-handling");
+
 const getAddProduct = (req, res, next) => {
   res.render("admin/edit-product", {
     pageTitle: "Add Product",
@@ -49,11 +51,13 @@ const postAddProduct = (req, res, next) => {
       console.log("Created Product");
       res.redirect("/admin/products");
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      newError(err);
+    });
 };
 
 const getEditProduct = (req, res, next) => {
-  const editMode = true;
+  const editMode = req.query.edit;
   if (!editMode) {
     return res.redirect("/");
   }
@@ -73,7 +77,7 @@ const getEditProduct = (req, res, next) => {
         validationErrors: [],
       });
     })
-    .catch((err) => console.log(err));
+    .catch((err) => newError(err));
 };
 
 const postEditProduct = (req, res, next) => {
@@ -115,7 +119,7 @@ const postEditProduct = (req, res, next) => {
         res.redirect("/admin/products");
       });
     })
-    .catch((err) => console.log(err));
+    .catch((err) => newError(err));
 };
 
 const getProducts = (req, res, next) => {
@@ -127,7 +131,7 @@ const getProducts = (req, res, next) => {
         path: "/admin/products",
       });
     })
-    .catch((err) => console.log(err));
+    .catch((err) => newError(err));
 };
 
 const postDeleteProduct = (req, res, next) => {
@@ -140,7 +144,7 @@ const postDeleteProduct = (req, res, next) => {
       console.log("Deleted");
       res.redirect("/admin/products");
     })
-    .catch((err) => console.log(err));
+    .catch((err) => newError(err));
 };
 
 module.exports = {

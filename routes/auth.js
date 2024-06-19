@@ -8,7 +8,7 @@ router.get("/login", controllers.getLogin);
 router.post(
   "/login",
   [
-    body("email").isEmail().withMessage("Enter a valid value").normalizeEmail(),
+    body("email").isEmail().withMessage("Enter a valid email").normalizeEmail(),
     body(
       "password",
       "Enter a password with only numbers and text and at lest 6 characters"
@@ -25,13 +25,12 @@ router.post(
   [
     body("email")
       .isEmail()
-      .withMessage("Enter a valid value")
+      .withMessage("Enter a valid email")
       .custom((value, { req }) => {
-        User.findOne({ email: value }).then((userDoc) => {
+        return User.findOne({ email: value }).then((userDoc) => {
           if (userDoc) {
             return Promise.reject("Email exists already");
           }
-          return true;
         });
       })
       .normalizeEmail(),

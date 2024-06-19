@@ -14,7 +14,6 @@
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button class="btn" type="submit">Reset Password</button>
     </form>
-    <div class="reset"><p><a href="/auth/reset">Forgot your password?</a></p></div>
     <% if(errorMessage) {%>
         <div class="user-error-message"><%= errorMessage%></div>
     <%}%>

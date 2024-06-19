@@ -22,7 +22,7 @@
   outline-color: #00695c;
 }
 
-.form-comtrol input.invalid,
-.form-comtrol textarea.invalid {
+.form-control input.invalid,
+.form-control textarea.invalid {
   border-color: red;
 }
