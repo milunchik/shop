@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require("path");
+const PDFDocument = require("pdfkit");
 const Product = require("../models/product");
 const Order = require("../models/order");
 const newError = require("./error-handling");
@@ -12,7 +15,7 @@ const getProducts = (req, res, next) => {
       });
     })
     .catch((err) => {
-      newError(err);
+      newError(err, next);
     });
 };
 
@@ -26,7 +29,7 @@ const getProduct = (req, res, next) => {
         path: "/products",
       });
     })
-    .catch((err) => newError(err));
+    .catch((err) => newError(err, next));
 };
 
 const getIndex = (req, res, next) => {
@@ -39,7 +42,7 @@ const getIndex = (req, res, next) => {
       });
     })
     .catch((err) => {
-      newError(err);
+      newError(err, next);
     });
 };
 
@@ -55,7 +58,7 @@ const getCart = (req, res, next) => {
         products: products,
       });
     })
-    .catch((err) => newError(err));
+    .catch((err) => newError(err, next));
 };
 
 const postCart = (req, res, next) => {
@@ -77,7 +80,7 @@ const postCartDeleteProduct = (req, res, next) => {
     .then((result) => {
       res.redirect("/cart");
     })
-    .catch((err) => newError(err));
+    .catch((err) => newError(err, next));
 };
 
 const postOrder = (req, res, next) => {
@@ -107,7 +110,7 @@ const postOrder = (req, res, next) => {
     .then(() => {
       res.redirect("/orders");
     })
-    .catch((err) => newError(err));
+    .catch((err) => newError(err, next));
 };
 
 const getOrders = (req, res, next) => {
@@ -120,7 +123,40 @@ const getOrders = (req, res, next) => {
         orders: orders,
       });
     })
-    .catch((err) => newError(err));
+    .catch((err) => newError(err, next));
+};
+
+const getInvoice = (req, res, next) => {
+  const orderId = req.params.orderId;
+
+  Order.findById(orderId)
+    .then((order) => {
+      if (!order) {
+        return next(new Error("No order found."));
+      }
+      if (order.user.userId.toString() !== req.user._id.toString()) {
+        return next(new Error("Unauthorized"));
+      }
+      const invoiceName = "invoice-" + orderId + ".pdf";
+      const invoicePath = path.join("data", "invoices", invoiceName);
+      const pdfDoc = new PDFDocument();
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        'inline; filename="' + invoiceName + '"'
+      );
+      const writeStream = fs.createWriteStream(invoicePath);
+
+      pdfDoc.pipe(writeStream);
+      pdfDoc.pipe(res);
+
+      pdfDoc.fontSize(26).text("Invoice", {
+        underline: true,
+      });
+
+      pdfDoc.end();
+    })
+    .catch((err) => next(err));
 };
 
 module.exports = {
@@ -132,4 +168,5 @@ module.exports = {
   postCart,
   postCartDeleteProduct,
   postOrder,
+  getInvoice,
 };

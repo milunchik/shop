@@ -19,4 +19,6 @@ router.post("/create-order", authControllers, controllers.postOrder);
 
 router.get("/orders", authControllers, controllers.getOrders);
 
+router.get("/orders/:orderId", authControllers, controllers.getInvoice);
+
 module.exports = router;

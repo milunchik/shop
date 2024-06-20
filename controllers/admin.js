@@ -1,7 +1,8 @@
 const Product = require("../models/product");
 const { validationResult } = require("express-validator");
-
-const newError = require("./error-handling");
+const fileHelper = require("../util/file");
+const { newError } = require("./error-handling");
+const product = require("../models/product");
 
 const getAddProduct = (req, res, next) => {
   res.render("admin/edit-product", {
@@ -18,7 +19,22 @@ const postAddProduct = (req, res, next) => {
   const title = req.body.title;
   const price = req.body.price;
   const description = req.body.description;
-  const imageUrl = req.body.imageUrl;
+  const image = req.file;
+  if (!image) {
+    return res.status(422).render("/admin/edit-product", {
+      pageTitle: "Add Product",
+      path: "/admin/edit-product",
+      editing: false,
+      hasError: true,
+      product: {
+        title: title,
+        price: price,
+        description: description,
+      },
+      errorMessage: "File is not an image",
+      validationErrors: [],
+    });
+  }
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
@@ -29,7 +45,6 @@ const postAddProduct = (req, res, next) => {
       hasError: true,
       product: {
         title: title,
-        imageUrl: imageUrl,
         price: price,
         description: description,
       },
@@ -37,6 +52,8 @@ const postAddProduct = (req, res, next) => {
       validationErrors: errors.array(),
     });
   }
+
+  const imageUrl = image.path;
   const product = new Product({
     title: title,
     price: price,
@@ -52,7 +69,7 @@ const postAddProduct = (req, res, next) => {
       res.redirect("/admin/products");
     })
     .catch((err) => {
-      newError(err);
+      newError(err, next);
     });
 };
 
@@ -77,7 +94,7 @@ const getEditProduct = (req, res, next) => {
         validationErrors: [],
       });
     })
-    .catch((err) => newError(err));
+    .catch((err) => newError(err, next));
 };
 
 const postEditProduct = (req, res, next) => {
@@ -85,7 +102,7 @@ const postEditProduct = (req, res, next) => {
   const updatedTitle = req.body.title;
   const updatedPrice = req.body.price;
   const updatedDesc = req.body.description;
-  const updatedImageUrl = req.body.imageUrl;
+  const image = req.file;
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
@@ -96,7 +113,6 @@ const postEditProduct = (req, res, next) => {
       hasError: false,
       product: {
         title: updatedTitle,
-        imageUrl: updatedImageUrl,
         price: updatedPrice,
         description: updatedDesc,
         _id: prodId,
@@ -110,16 +126,20 @@ const postEditProduct = (req, res, next) => {
       if (product.userId.toString() !== req.user._id.toString()) {
         return res.redirect("/");
       }
-      (product.title = updatedTitle),
-        (product.price = updatedPrice),
-        (product.description = updatedDesc),
-        (product.imageUrl = updatedImageUrl);
+      product.title = updatedTitle;
+      product.price = updatedPrice;
+      product.description = updatedDesc;
+      if (image) {
+        fileHelper.deleteFile(product.imageUrl);
+        product.imageUrl = image.path;
+      }
+
       return product.save().then((result) => {
         console.log("Updated");
         res.redirect("/admin/products");
       });
     })
-    .catch((err) => newError(err));
+    .catch((err) => newError(err, next));
 };
 
 const getProducts = (req, res, next) => {
@@ -131,20 +151,24 @@ const getProducts = (req, res, next) => {
         path: "/admin/products",
       });
     })
-    .catch((err) => newError(err));
+    .catch((err) => newError(err, next));
 };
 
 const postDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
-  Product.deleteOne({ _id: prodId, userId: req.user._id })
+  Product.findById(prodId)
     .then((product) => {
-      if (product.userId !== req.user._id) {
-        return res.redirect("/");
+      if (!product) {
+        return next(new Error("Product not found"));
       }
+      fileHelper.deleteFile(product.imageUrl);
+      return Product.deleteOne({ _id: prodId, userId: req.user._id });
+    })
+    .then((product) => {
       console.log("Deleted");
       res.redirect("/admin/products");
     })
-    .catch((err) => newError(err));
+    .catch((err) => newError(err, next));
 };
 
 module.exports = {

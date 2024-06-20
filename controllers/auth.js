@@ -5,7 +5,7 @@ const axios = require("axios");
 const url = "https://sandbox.api.mailtrap.io/api/send/2960595";
 const token = "66cead96c03efe5609adf94245f50a98";
 const { query, validationResult } = require("express-validator");
-const newError = require("./error-handling");
+const { newError } = require("./error-handling");
 
 const getLogin = (req, res, next) => {
   let message = req.flash("error");
@@ -86,7 +86,7 @@ const postLogin = (req, res, next) => {
         });
     })
     .catch((err) => {
-      newError(err);
+      newError(err, next);
     });
 };
 
@@ -150,7 +150,7 @@ const postSignUp = (req, res, next) => {
       sendEmail(email, "You are registered successfully");
       res.redirect("/login");
     })
-    .catch((err) => newError(err));
+    .catch((err) => newError(err, next));
 };
 
 const getReset = (req, res, next) => {
@@ -190,7 +190,7 @@ const postReset = (req, res, next) => {
         req.flash("error", "Go to your email to reset the password");
         return user.save();
       })
-      .catch((err) => newError(err));
+      .catch((err) => newError(err, next));
   });
 };
 
@@ -212,7 +212,7 @@ const getNewPassword = (req, res, next) => {
         passwordToken: token,
       });
     })
-    .catch((err) => newError(err));
+    .catch((err) => newError(err, next));
 };
 
 const postNewPassword = (req, res, next) => {
@@ -238,7 +238,7 @@ const postNewPassword = (req, res, next) => {
     .then((result) => {
       res.redirect("/login");
     })
-    .catch((err) => newError(err));
+    .catch((err) => newError(err, next));
 };
 
 function sendEmail(email, text) {
