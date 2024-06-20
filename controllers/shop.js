@@ -5,13 +5,30 @@ const Product = require("../models/product");
 const Order = require("../models/order");
 const newError = require("./error-handling");
 
+const itemOnPage = 3;
+
 const getProducts = (req, res, next) => {
+  const page = +req.query.page || 1;
+  let totalProducts;
   Product.find()
+    .countDocuments()
+    .then((numProducts) => {
+      totalProducts = numProducts;
+      return Product.find()
+        .skip((page - 1) * itemOnPage)
+        .limit(itemOnPage);
+    })
     .then((products) => {
       res.render("shop/product-list", {
         prods: products,
         pageTitle: "All Products",
         path: "/products",
+        currentPage: page,
+        hasNextPage: itemOnPage * page < totalProducts,
+        hasPreviousPage: page > 1,
+        nextPage: page + 1,
+        previousPage: page - 1,
+        lastPage: Math.ceil(totalProducts / itemOnPage),
       });
     })
     .catch((err) => {
@@ -33,12 +50,27 @@ const getProduct = (req, res, next) => {
 };
 
 const getIndex = (req, res, next) => {
+  const page = +req.query.page || 1;
+  let totalProducts;
   Product.find()
+    .countDocuments()
+    .then((numProducts) => {
+      totalProducts = numProducts;
+      return Product.find()
+        .skip((page - 1) * itemOnPage)
+        .limit(itemOnPage);
+    })
     .then((products) => {
       res.render("shop/index", {
         prods: products,
         pageTitle: "Shop",
         path: "/",
+        currentPage: page,
+        hasNextPage: itemOnPage * page < totalProducts,
+        hasPreviousPage: page > 1,
+        nextPage: page + 1,
+        previousPage: page - 1,
+        lastPage: Math.ceil(totalProducts / itemOnPage),
       });
     })
     .catch((err) => {
