@@ -5,6 +5,10 @@ const Product = require("../models/product");
 const Order = require("../models/order");
 const newError = require("./error-handling");
 
+const stripe = require("stripe")(
+  "sk_test_51PTwUyP1EcKcBg8o5Uyg4yhRy08h7TqU7KlLYyZ4cCiZGsdlBj0CSYQwz3nfFOokGZx3NaEUBQVBaZWAD1dZyZZT00HXVjS3tV"
+);
+
 const itemOnPage = 3;
 
 const getProducts = (req, res, next) => {
@@ -115,6 +119,53 @@ const postCartDeleteProduct = (req, res, next) => {
     .catch((err) => newError(err, next));
 };
 
+const getCheckout = (req, res, next) => {
+  let products;
+  let total = 0;
+
+  req.user
+    .populate("cart.items.productId")
+    .then((user) => {
+      products = user.cart.items;
+      products.forEach((p) => {
+        total += p.quantity * p.productId.price;
+      });
+
+      const lineItems = products.map((p) => ({
+        price_data: {
+          currency: "usd",
+          unit_amount: p.productId.price * 100,
+          product_data: {
+            name: p.productId.title,
+          },
+        },
+        quantity: p.quantity,
+      }));
+
+      return stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: lineItems,
+        mode: "payment",
+        success_url:
+          req.protocol + "://" + req.get("host") + "/checkout/success",
+        cancel_url: req.protocol + "://" + req.get("host") + "/checkout/cancel",
+      });
+    })
+    .then((session) => {
+      res.render("shop/checkout", {
+        path: "/checkout",
+        pageTitle: "Checkout",
+        products: products,
+        totalPay: total,
+        sessionId: session.id,
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).send("Failed to process checkout");
+    });
+};
+
 const postOrder = (req, res, next) => {
   req.user
     .populate("cart.items.productId")
@@ -201,4 +252,5 @@ module.exports = {
   postCartDeleteProduct,
   postOrder,
   getInvoice,
+  getCheckout,
 };
